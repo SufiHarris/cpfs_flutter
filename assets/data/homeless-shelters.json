@@ -1,0 +1,15 @@
+[
+  {
+    "id": "shelter_1",
+    "name": "Union Rescue Mission",
+    "type": "homeless_shelter", 
+    "services": "Emergency Shelter for men, women, and children. Long-term recovery programs. Job training and placement services, medical and dental clinics.",
+    "address": "545 S. San Pedro St.",
+    "city": "Los Angeles",
+    "state": "California",
+    "zipCode": "90013",
+    "website": "https://urm.org",
+    "phone": "(213) 347-6300",
+    "coordinates": [34.0435, -118.2468]
+  }
+]
