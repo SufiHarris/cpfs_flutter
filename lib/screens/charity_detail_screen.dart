@@ -3,7 +3,7 @@ import 'package:amplify_flutter/amplify_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'dart:convert';
 
-import '../core/models/charity_model.dart';
+import '../models/charity_model.dart';
 import '../core/shared/graphql_queries.dart';
 
 class CharityDetailsScreen extends StatefulWidget {

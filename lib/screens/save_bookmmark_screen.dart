@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:amplify_flutter/amplify_flutter.dart';
 import 'package:go_router/go_router.dart';
-import '../core/models/charity_model.dart';
+import '../models/charity_model.dart';
 import '../core/shared/graphql_queries.dart';
 import '../widgets/app_scaffold.dart';
 import 'dart:convert';
