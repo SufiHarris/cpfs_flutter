@@ -16,6 +16,8 @@ class MapsScreen extends StatefulWidget {
 class _MapsScreenState extends State<MapsScreen> {
   final Completer<GoogleMapController> _controller = Completer();
   final Set<Marker> _markers = {};
+  final DraggableScrollableController _sheetController =
+      DraggableScrollableController();
   Position? _currentPosition;
   MapLocation? _selectedLocation;
   bool _isLoadingLocation = false;
@@ -61,6 +63,12 @@ class _MapsScreenState extends State<MapsScreen> {
   void initState() {
     super.initState();
     _loadData();
+  }
+
+  @override
+  void dispose() {
+    _sheetController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadData() async {
@@ -330,6 +338,13 @@ class _MapsScreenState extends State<MapsScreen> {
       _selectedLocation = service;
     });
     _zoomToLocation(service.latitude, service.longitude, zoom: 14);
+
+    // Collapse the sheet to show the map
+    _sheetController.animateTo(
+      0.3,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+    );
   }
 
   Future<void> _openDirections(MapLocation location) async {
@@ -416,42 +431,41 @@ class _MapsScreenState extends State<MapsScreen> {
     }
 
     return AppScaffold(
-      child: Column(
+      child: Stack(
         children: [
-          // Header Section
-          Container(
-            color: Colors.white,
-            padding: const EdgeInsets.all(16),
-            child: const Column(
-              children: [
-                Text(
-                  'Veteran Services & Support',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF13345C),
-                  ),
-                  textAlign: TextAlign.center,
+          // Full screen map
+          Column(
+            children: [
+              // Header Section
+              Container(
+                color: Colors.white,
+                padding: const EdgeInsets.all(16),
+                child: const Column(
+                  children: [
+                    Text(
+                      'Veteran Services & Support',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF13345C),
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    SizedBox(height: 4),
+                    Text(
+                      'Find veteran services, support centers, and drop-off locations',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
                 ),
-                SizedBox(height: 4),
-                Text(
-                  'Find veteran services, support centers, and drop-off locations',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ],
-            ),
-          ),
-
-          // Map Container (~60% of screen)
-          Expanded(
-            flex: 6,
-            child: Stack(
-              children: [
-                GoogleMap(
+              ),
+              // Map
+              Expanded(
+                child: GoogleMap(
                   mapType: MapType.normal,
                   initialCameraPosition: _initialPosition,
                   markers: _markers,
@@ -462,170 +476,199 @@ class _MapsScreenState extends State<MapsScreen> {
                     _controller.complete(controller);
                   },
                 ),
-                Positioned(
-                  top: 16,
-                  right: 16,
-                  child: FloatingActionButton(
-                    mini: true,
-                    backgroundColor: Colors.white,
-                    onPressed: _isLoadingLocation ? null : _getCurrentLocation,
-                    child: _isLoadingLocation
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Icon(Icons.my_location,
-                            color: Color(0xFF3498db)),
-                  ),
-                ),
-              ],
+              ),
+            ],
+          ),
+
+          // My Location Button
+          Positioned(
+            top: 100,
+            right: 16,
+            child: FloatingActionButton(
+              mini: true,
+              backgroundColor: Colors.white,
+              onPressed: _isLoadingLocation ? null : _getCurrentLocation,
+              child: _isLoadingLocation
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.my_location, color: Color(0xFF3498db)),
             ),
           ),
 
-          // Bottom Sheet (~40% of screen)
-          Expanded(
-            flex: 4,
-            child: Container(
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(20),
-                  topRight: Radius.circular(20),
+          // Draggable Bottom Sheet
+          DraggableScrollableSheet(
+            controller: _sheetController,
+            initialChildSize: 0.4,
+            minChildSize: 0.2,
+            maxChildSize: 0.9,
+            snap: true,
+            snapSizes: const [0.2, 0.4, 0.9],
+            builder: (BuildContext context, ScrollController scrollController) {
+              return Container(
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(20),
+                    topRight: Radius.circular(20),
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black26,
+                      blurRadius: 10,
+                      offset: Offset(0, -2),
+                    ),
+                  ],
                 ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black12,
-                    blurRadius: 8,
-                    offset: Offset(0, -2),
-                  ),
-                ],
-              ),
-              child: Column(
-                children: [
-                  // Filter Section
-                  Container(
-                    padding: const EdgeInsets.all(20),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Filter Services',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF13345C),
+                child: Column(
+                  children: [
+                    // Drag Handle
+                    Container(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      child: Center(
+                        child: Container(
+                          width: 40,
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: Colors.grey[300],
+                            borderRadius: BorderRadius.circular(2),
                           ),
                         ),
-                        const SizedBox(height: 12),
-                        SizedBox(
-                          height: 40,
-                          child: ListView.builder(
-                            scrollDirection: Axis.horizontal,
-                            itemCount: _filterOptions.length,
-                            itemBuilder: (context, index) {
-                              final option = _filterOptions[index];
-                              final isSelected =
-                                  _selectedFilter == option['key'];
-                              return Padding(
-                                padding: const EdgeInsets.only(right: 8),
-                                child: FilterChip(
-                                  label: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Text(
-                                        option['icon'],
-                                        style: const TextStyle(fontSize: 14),
-                                      ),
-                                      const SizedBox(width: 6),
-                                      Text(
-                                        option['label'],
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w600,
-                                          color: isSelected
-                                              ? Colors.white
-                                              : option['color'],
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  selected: isSelected,
-                                  onSelected: (selected) {
-                                    setState(() {
-                                      _selectedFilter = option['key'];
-                                      _loadMarkers();
-                                    });
-                                  },
-                                  backgroundColor: Colors.white,
-                                  selectedColor: option['color'],
-                                  side: BorderSide(
-                                    color: option['color'],
-                                    width: 1.5,
-                                  ),
-                                  showCheckmark: false,
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-                      ],
+                      ),
                     ),
-                  ),
 
-                  const Divider(height: 1),
-
-                  // Services List
-                  Expanded(
-                    child: ListView(
-                      padding: const EdgeInsets.all(20),
-                      children: [
-                        Row(
-                          children: [
-                            Text(
-                              'Service Locations (${_filteredLocations.length})',
-                              style: const TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFF13345C),
-                              ),
+                    // Filter Section (Sticky)
+                    Container(
+                      padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+                      decoration: const BoxDecoration(
+                        color: Colors.white,
+                        border: Border(
+                          bottom: BorderSide(color: Color(0xFFEEEEEE)),
+                        ),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Filter Services',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF13345C),
                             ),
-                            if (_selectedFilter != 'all') ...[
-                              const Text(
-                                ' • ',
-                                style:
-                                    TextStyle(fontSize: 14, color: Colors.grey),
-                              ),
+                          ),
+                          const SizedBox(height: 12),
+                          SizedBox(
+                            height: 40,
+                            child: ListView.builder(
+                              scrollDirection: Axis.horizontal,
+                              itemCount: _filterOptions.length,
+                              itemBuilder: (context, index) {
+                                final option = _filterOptions[index];
+                                final isSelected =
+                                    _selectedFilter == option['key'];
+                                return Padding(
+                                  padding: const EdgeInsets.only(right: 8),
+                                  child: FilterChip(
+                                    label: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Text(
+                                          option['icon'],
+                                          style: const TextStyle(fontSize: 14),
+                                        ),
+                                        const SizedBox(width: 6),
+                                        Text(
+                                          option['label'],
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w600,
+                                            color: isSelected
+                                                ? Colors.white
+                                                : option['color'],
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    selected: isSelected,
+                                    onSelected: (selected) {
+                                      setState(() {
+                                        _selectedFilter = option['key'];
+                                        _loadMarkers();
+                                        _fitBoundsToMarkers();
+                                      });
+                                    },
+                                    backgroundColor: Colors.white,
+                                    selectedColor: option['color'],
+                                    side: BorderSide(
+                                      color: option['color'],
+                                      width: 1.5,
+                                    ),
+                                    showCheckmark: false,
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    // Services List (Scrollable)
+                    Expanded(
+                      child: ListView(
+                        controller: scrollController,
+                        padding: const EdgeInsets.all(20),
+                        children: [
+                          Row(
+                            children: [
                               Text(
-                                _filterOptions.firstWhere(
-                                  (f) => f['key'] == _selectedFilter,
-                                )['label'],
+                                'Service Locations (${_filteredLocations.length})',
                                 style: const TextStyle(
-                                  fontSize: 14,
-                                  color: Colors.grey,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF13345C),
                                 ),
                               ),
+                              if (_selectedFilter != 'all') ...[
+                                const Text(
+                                  ' • ',
+                                  style: TextStyle(
+                                      fontSize: 14, color: Colors.grey),
+                                ),
+                                Text(
+                                  _filterOptions.firstWhere(
+                                    (f) => f['key'] == _selectedFilter,
+                                  )['label'],
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    color: Colors.grey,
+                                  ),
+                                ),
+                              ],
                             ],
-                          ],
-                        ),
-                        const SizedBox(height: 4),
-                        const Text(
-                          'Tap any location to zoom the map',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey,
-                            fontStyle: FontStyle.italic,
                           ),
-                        ),
-                        const SizedBox(height: 12),
-                        ..._filteredLocations
-                            .map((service) => _buildServiceCard(service)),
-                      ],
+                          const SizedBox(height: 4),
+                          const Text(
+                            'Tap any location to zoom the map',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey,
+                              fontStyle: FontStyle.italic,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          ..._filteredLocations
+                              .map((service) => _buildServiceCard(service)),
+                        ],
+                      ),
                     ),
-                  ),
-                ],
-              ),
-            ),
+                  ],
+                ),
+              );
+            },
           ),
         ],
       ),
@@ -669,6 +712,8 @@ class _MapsScreenState extends State<MapsScreen> {
                       fontSize: 14,
                       color: Colors.grey,
                     ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                   ),
                   if (service.address != null) ...[
                     const SizedBox(height: 2),
@@ -678,6 +723,8 @@ class _MapsScreenState extends State<MapsScreen> {
                         fontSize: 12,
                         color: Color(0xFF888888),
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ],
                   if (service.phone != null) ...[

@@ -3,7 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:amplify_flutter/amplify_flutter.dart';
 import 'package:amplify_auth_cognito/amplify_auth_cognito.dart';
-import 'package:amplify_api/amplify_api.dart'; // ADD THIS IMPORT
+import 'package:amplify_api/amplify_api.dart';
+import 'package:amplify_storage_s3/amplify_storage_s3.dart'; // ADD THIS
 
 import 'core/constants/app_routes.dart';
 import 'core/shared/amplify_configuration.dart';
@@ -52,14 +53,18 @@ class _MyAppState extends State<MyApp> {
       final authPlugin = AmplifyAuthCognito();
       await Amplify.addPlugin(authPlugin);
 
-      // ADD THE API PLUGIN
+      // Add the API plugin
       final apiPlugin = AmplifyAPI();
       await Amplify.addPlugin(apiPlugin);
+
+      // Add the Storage plugin (NEW)
+      final storagePlugin = AmplifyStorageS3();
+      await Amplify.addPlugin(storagePlugin);
 
       // Configure Amplify with your configuration
       await Amplify.configure(amplifyconfig);
 
-      safePrint('Successfully configured Amplify');
+      safePrint('Successfully configured Amplify with Auth, API, and Storage');
       setState(() => _amplifyConfigured = true);
     } on AmplifyAlreadyConfiguredException {
       safePrint('Amplify was already configured. Proceeding...');
